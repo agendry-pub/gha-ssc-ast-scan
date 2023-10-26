@@ -41829,7 +41829,8 @@ async function getAppVersion(app, version) {
         'ssc',
         'appversion',
         'list',
-        `-q`, `application.name=='${app}'&&name=='${version}'`,
+        `-q`,
+        `application.name=='${app}'&&name=='${version}'`,
         '--output=json'
     ]))[0];
 }
@@ -41840,7 +41841,7 @@ async function getAppVersionId(app, version) {
 }
 exports.getAppVersionId = getAppVersionId;
 async function getAppVersionCustomTags(appVersionId, fields) {
-    const url = `/api/v1/projectVersions/${appVersionId}/customTags?${fields ? `fields=${fields}&` : ""}`;
+    const url = `/api/v1/projectVersions/${appVersionId}/customTags?${fields ? `fields=${fields}&` : ''}`;
     return await utils.fcliRest(url);
 }
 async function appVersionExists(app, version) {
@@ -41927,23 +41928,25 @@ async function copyAppVersionAudit(source, target) {
     var jp = __nccwpck_require__(4378);
     utils.debugObject(`Copying AppVersion Audit values ${source} -> ${target}`);
     utils.debugObject(`Get CustomTag list from AppVersion ${source}`);
-    const customTags = await getAppVersionCustomTags(source, "id,guid,name,valueType,valueList");
+    const customTags = await getAppVersionCustomTags(source, 'id,guid,name,valueType,valueList');
     utils.debugObject(`CustomTags Qty: ${customTags.length}`);
     utils.debugObject(`Get vulns list from Source AppVersion ${source}`);
-    const vulns = await vuln.getAppVersionVulns(source, "", "", "id,issueInstanceId,revision", "auditValues");
+    const vulns = await vuln.getAppVersionVulns(source, '', '', 'id,issueInstanceId,revision', 'auditValues');
     utils.debugObject(`transpose to appversion ${target}`);
     await vuln.transposeToAppVersion(vulns, target);
     let requests = [];
     await Promise.all(vulns.map(async function (vulnTmp) {
         // const customTagUniqueValues: string[] = Array.from(new Set(jp.query(vulns, `$..[?(@.customTagGuid=="${customTag.guid}")].textValue`)))
         if (vulnTmp._embed.auditValues.length) {
-            requests.push(vuln.getAuditVulnsRequest(target, [{
-                    "id": vulnTmp.id,
-                    "revision": vulnTmp.revision
-                }], vulnTmp._embed.auditValues));
+            requests.push(vuln.getAuditVulnsRequest(target, [
+                {
+                    id: vulnTmp.id,
+                    revision: vulnTmp.revision
+                }
+            ], vulnTmp._embed.auditValues));
         }
     }));
-    await utils.fcliRest("/api/v1/bulk", "POST", JSON.stringify({ "requests": requests }));
+    await utils.fcliRest('/api/v1/bulk', 'POST', JSON.stringify({ requests: requests }));
     return true;
 }
 async function deleteAppVersion(id) {
@@ -41955,7 +41958,8 @@ async function getAppId(app) {
         'ssc',
         'app',
         'ls',
-        `-q`, `name=='${app}'`,
+        `-q`,
+        `name=='${app}'`,
         '--output=json'
     ]);
     if (jsonRes.length === 0) {
@@ -41986,13 +41990,12 @@ async function addCustomTag(appId, customTagGuid) {
     const body = {
         guid: customTagGuid
     };
-    return (await utils.fcliRest(url, "POST", JSON.stringify(body))).length > 0;
+    return (await utils.fcliRest(url, 'POST', JSON.stringify(body))).length > 0;
 }
 exports.addCustomTag = addCustomTag;
 async function runAppVersionCreation(app, version, source_app, source_version) {
     core.info(`ApplicationVersion ${app}:${version} creation`);
-    const appVersion = await createAppVersion(app, version)
-        .catch(async function (error) {
+    const appVersion = await createAppVersion(app, version).catch(async function (error) {
         core.error(`${error.message}`);
         throw new Error(utils.failure(`ApplicationVersion ${app}:${version} creation`));
     });
@@ -42003,8 +42006,7 @@ async function runAppVersionCreation(app, version, source_app, source_version) {
     if (source_version) {
         source_app = source_app ? source_app : app;
         core.info(`Copy state from ${source_app}:${source_version} to ${app}:${version}`);
-        sourceAppVersionId = await getAppVersionId(source_app, source_version)
-            .catch(error => {
+        sourceAppVersionId = await getAppVersionId(source_app, source_version).catch(error => {
             core.warning(`Failed to get ${source_app}:${source_version} id`);
             core.warning(`${error.message}`);
         });
@@ -42047,9 +42049,8 @@ async function runAppVersionCreation(app, version, source_app, source_version) {
         core.error(error.message);
         core.error(utils.failure(`Committing AppVersion ${appVersion.project.name}:${appVersion.name} (id: ${appVersion.id})`));
         /** delete uncommited AppVersion */
-        core.info("Trying to delete uncommitted version");
-        await deleteAppVersion(appVersion.id)
-            .catch(error => {
+        core.info('Trying to delete uncommitted version');
+        await deleteAppVersion(appVersion.id).catch(error => {
             core.error(`Failed to delete uncommited version ${appVersion.project.name}:${appVersion.name} [id: ${appVersion.id}`);
         });
         throw new Error(`Failed to commit AppVersion ${appVersion.project.name}:${appVersion.name} (id: ${appVersion.id})`);
@@ -42077,15 +42078,13 @@ async function runAppVersionCreation(app, version, source_app, source_version) {
 }
 async function getOrCreateAppVersionId(app, version, source_app, source_version) {
     core.info(`Retrieving AppVersion ${app}:${version}`);
-    let appVersionId = await getAppVersionId(app, version)
-        .catch(error => {
+    let appVersionId = await getAppVersionId(app, version).catch(error => {
         core.error(`${error.message}`);
         throw new Error(utils.failure(`Retrieving AppVersion ${app}:${version}`));
     });
     if (appVersionId === undefined || appVersionId === -1) {
         core.info(utils.notFound(`Retrieving AppVersion ${app}:${version}`));
-        appVersionId = await runAppVersionCreation(app, version, source_app, source_version)
-            .catch(error => {
+        appVersionId = await runAppVersionCreation(app, version, source_app, source_version).catch(error => {
             core.error(error.message);
             core.setFailed(`Failed to create application version ${app}:${version}`);
             process_1.default.exit(core.ExitCode.Failure);
@@ -42100,11 +42099,16 @@ async function getOrCreateAppVersionId(app, version, source_app, source_version)
 exports.getOrCreateAppVersionId = getOrCreateAppVersionId;
 async function appVersionHasCustomTag(AppVersionId, customTagGuid) {
     // Can be used to get it using App and version names : project.name:"Bench"+AND+name:"1.0"
-    return (await utils.fcli(['ssc', 'appversion', 'list',
+    return ((await utils.fcli([
+        'ssc',
+        'appversion',
+        'list',
         `--q-param=id:${AppVersionId}`,
         `--embed=customTags`,
         `--output=json`,
-        `-q`, `customTags.![guid].contains('${customTagGuid}')`])).length > 0;
+        `-q`,
+        `customTags.![guid].contains('${customTagGuid}')`
+    ])).length > 0);
 }
 exports.appVersionHasCustomTag = appVersionHasCustomTag;
 
@@ -42148,7 +42152,7 @@ const utils = __importStar(__nccwpck_require__(1314));
 const core = __importStar(__nccwpck_require__(2186));
 const http = __importStar(__nccwpck_require__(6255));
 const fs_1 = __importDefault(__nccwpck_require__(7147));
-async function getAppVersionArtifacts(appId, scanType, status = "PROCESS_COMPLETE") {
+async function getAppVersionArtifacts(appId, scanType, status = 'PROCESS_COMPLETE') {
     let args = [
         'ssc',
         'artifact',
@@ -42166,24 +42170,26 @@ async function getLatestArtifact(appId, scanType) {
 }
 exports.getLatestArtifact = getLatestArtifact;
 async function getLatestSastArtifact(appId) {
-    let jsonRes = await getAppVersionArtifacts(appId, "SCA");
+    let jsonRes = await getAppVersionArtifacts(appId, 'SCA');
     return jsonRes[0];
 }
 exports.getLatestSastArtifact = getLatestSastArtifact;
 async function getLatestDastArtifact(appId) {
-    let jsonRes = await getAppVersionArtifacts(appId, "WEBINSPECT");
+    let jsonRes = await getAppVersionArtifacts(appId, 'WEBINSPECT');
     return jsonRes[0];
 }
 exports.getLatestDastArtifact = getLatestDastArtifact;
 async function getLatestScaArtifact(appId) {
-    let jsonRes = await getAppVersionArtifacts(appId, "SONATYPE");
+    let jsonRes = await getAppVersionArtifacts(appId, 'SONATYPE');
     return jsonRes[0];
 }
 exports.getLatestScaArtifact = getLatestScaArtifact;
 async function getScanTypesList(appId) {
     let artifacts = await getAppVersionArtifacts(appId);
     var jp = __nccwpck_require__(4378);
-    const scanTypes = jp.query(artifacts, `$.*.scanTypes`).filter((scanType, i, arr) => arr.findIndex(t => t === scanType) === i);
+    const scanTypes = jp
+        .query(artifacts, `$.*.scanTypes`)
+        .filter((scanType, i, arr) => arr.findIndex(t => t === scanType) === i);
     utils.debugGroup('scanType:', scanTypes);
     return scanTypes;
 }
@@ -42200,7 +42206,7 @@ async function uploadArtifact(appId, filePath) {
             '--output=json'
         ];
         const response = await utils.fcli(args);
-        if (["REQUIRE_AUTH", "SCHED_PROCESSING", "PROCESSING", "PROCESSED"].includes(response.status)) {
+        if (['REQUIRE_AUTH', 'SCHED_PROCESSING', 'PROCESSING', 'PROCESSED'].includes(response.status)) {
             return response.id;
         }
         else {
@@ -42209,7 +42215,7 @@ async function uploadArtifact(appId, filePath) {
     }
     catch (e) {
         core.error(e.message);
-        throw new Error("uploadArtifact failed");
+        throw new Error('uploadArtifact failed');
     }
 }
 exports.uploadArtifact = uploadArtifact;
@@ -42218,33 +42224,48 @@ async function downloadArtifact(jobToken) {
         const httpRequest = new http.HttpClient();
         httpRequest.requestOptions = {
             headers: {
-                "fortify-client": core.getInput("sast_client_auth_token")
+                'fortify-client': core.getInput('sast_client_auth_token')
             }
         };
-        const filePath = "scan.fpr";
+        const filePath = 'scan.fpr';
         const fpr = fs_1.default.createWriteStream(filePath);
-        const url = await utils.getSastBaseUrl() + `/rest/v2/job/${jobToken}/FPR`;
+        const url = (await utils.getSastBaseUrl()) + `/rest/v2/job/${jobToken}/FPR`;
         let response = await httpRequest.get(url);
         const message = await response.message.pipe(fpr);
         return filePath;
     }
     catch (e) {
         core.error(e.message);
-        throw new Error("downloadArtifact failed");
+        throw new Error('downloadArtifact failed');
     }
 }
 exports.downloadArtifact = downloadArtifact;
 async function waitForArtifactUpload(artifactId) {
     try {
-        await utils.fcli(['ssc', 'artifact', 'wait-for', artifactId.toString(),
+        await utils.fcli([
+            'ssc',
+            'artifact',
+            'wait-for',
+            artifactId.toString(),
             // `--while=REQUIRE_AUTH|SCHED_PROCESSING|PROCESSING`,
-            `--on-failure-state=terminate`, `--on-unknown-state=terminate`, `--interval=10s`,
-            `--output=expr=Artifact Processing [{id}] ... {status}`], true, false);
-        let response = (await utils.fcli(['ssc', 'artifact', 'wait-for', artifactId.toString(),
+            `--on-failure-state=terminate`,
+            `--on-unknown-state=terminate`,
+            `--interval=10s`,
+            `--output=expr=Artifact Processing [{id}] ... {status}`
+        ], true, false);
+        let response = (await utils.fcli([
+            'ssc',
+            'artifact',
+            'wait-for',
+            artifactId.toString(),
             // `--while=REQUIRE_AUTH|SCHED_PROCESSING|PROCESSING`,'--no-progress',
-            `--on-failure-state=terminate`, `--on-unknown-state=terminate`,
-            `--interval=10s`, '--progress=none', '--output=json',]))[0];
-        if (response.status === "PROCESS_COMPLETE") {
+            `--on-failure-state=terminate`,
+            `--on-unknown-state=terminate`,
+            `--interval=10s`,
+            '--progress=none',
+            '--output=json'
+        ]))[0];
+        if (response.status === 'PROCESS_COMPLETE') {
             return { id: response._embed.scans[0].id, date: response.lastScanDate };
         }
         else {
@@ -42253,7 +42274,7 @@ async function waitForArtifactUpload(artifactId) {
     }
     catch (e) {
         core.error(e.message);
-        throw new Error("waitForArtifactUpload failed");
+        throw new Error('waitForArtifactUpload failed');
     }
 }
 exports.waitForArtifactUpload = waitForArtifactUpload;
@@ -42293,8 +42314,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.commitCustomTagExists = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const utils = __importStar(__nccwpck_require__(1314));
-async function getCustomTag(guid) {
-}
+async function getCustomTag(guid) { }
 async function commitCustomTagExists(guid) {
     core.debug(`Checking if CustomTag ${guid} exists`);
     return (await utils.fcliRest(`/api/v1/customTags?q=guid:${guid}`)).length > 0;
@@ -42347,12 +42367,12 @@ async function getFilterSet(appId, filterSetName) {
 }
 async function getFilterSetGuid(appId, filterSetName) {
     let jsonRes = await getFilterSet(appId, filterSetName);
-    return jsonRes["guid"];
+    return jsonRes['guid'];
 }
 exports.getFilterSetGuid = getFilterSetGuid;
 async function getFilterSetFolders(appId, filterSetName) {
     let jsonRes = await getFilterSet(appId, filterSetName);
-    return jsonRes["folders"];
+    return jsonRes['folders'];
 }
 exports.getFilterSetFolders = getFilterSetFolders;
 
@@ -42411,15 +42431,25 @@ const INPUT = {
     ssc_version: core.getInput('ssc_version', { required: false }),
     ssc_source_app: core.getInput('ssc_source_app', { required: false }),
     ssc_source_version: core.getInput('ssc_source_version', { required: false }),
-    ssc_source_copy_vulns: core.getInput('ssc_source_copy_vulns', { required: false }),
-    ssc_commit_customtag_guid: core.getInput('ssc_commit_customtag_guid', { required: true }),
+    ssc_source_copy_vulns: core.getInput('ssc_source_copy_vulns', {
+        required: false
+    }),
+    ssc_commit_customtag_guid: core.getInput('ssc_commit_customtag_guid', {
+        required: true
+    }),
     sast_scan: core.getBooleanInput('sast_scan', { required: false }),
-    sast_client_auth_token: core.getInput('sast_client_auth_token', { required: false }),
+    sast_client_auth_token: core.getInput('sast_client_auth_token', {
+        required: false
+    }),
     sast_build_options: core.getInput('sast_build_options', { required: false }),
-    security_gate_action: core.getInput('security_gate_action', { required: false }),
-    security_gate_filterset: core.getInput('security_gate_filterset', { required: false }),
+    security_gate_action: core.getInput('security_gate_action', {
+        required: false
+    }),
+    security_gate_filterset: core.getInput('security_gate_filterset', {
+        required: false
+    }),
     summary_filterset: core.getInput('summary_filterset', { required: false }),
-    gha_token: core.getInput('gha_token', { required: false }),
+    gha_token: core.getInput('gha_token', { required: false })
 };
 /**
  * The main function for the action.
@@ -42442,10 +42472,12 @@ async function run() {
          * - Waits for completion of PR's commit
          * - Define PR's AppVersion to the base branch
          * */
-        if (github.context.eventName === "pull_request") {
-            core.info("Pull Request detected");
+        if (github.context.eventName === 'pull_request') {
+            core.info('Pull Request detected');
             core.info("Waiting for PR's related commits check runs to complete");
-            const completed = await pullrequest.waitForPullRunsCompleted().catch(error => {
+            const completed = await pullrequest
+                .waitForPullRunsCompleted()
+                .catch(error => {
                 core.warning(`Something went wrong while waiting for PR's related commits check runs to complete: ${error.message}`);
             });
             if (completed) {
@@ -42465,12 +42497,15 @@ async function run() {
         if (INPUT.sast_scan) {
             /** Source code packaging */
             core.info(`Packaging source code with "${INPUT.sast_build_options}"`);
-            const packagePath = "package.zip";
-            await sast.packageSourceCode(INPUT.sast_build_options, packagePath).then(packaged => {
+            const packagePath = 'package.zip';
+            await sast
+                .packageSourceCode(INPUT.sast_build_options, packagePath)
+                .then(packaged => {
                 if (packaged != 0) {
                     throw new Error(utils.failure(`Packaging source code with "${INPUT.sast_build_options}"`));
                 }
-            }).catch(error => {
+            })
+                .catch(error => {
                 core.error(error.message);
                 core.setFailed(utils.failure(`Packaging source code with "${INPUT.sast_build_options}"`));
                 process.exit(core.ExitCode.Failure);
@@ -42478,21 +42513,26 @@ async function run() {
             core.info(utils.success(`Packaging source code with "${INPUT.sast_build_options}"`));
             /** SAST scan submisison */
             core.info(`SAST scan submission`);
-            const jobToken = await sast.startSastScan(packagePath).catch(error => {
+            const jobToken = await sast
+                .startSastScan(packagePath)
+                .catch(error => {
                 core.error(error.message);
                 core.setFailed(utils.failure(`SAST scan submission`));
                 process.exit(core.ExitCode.Failure);
             });
             core.info(utils.success(`SAST scan submission`));
             core.info(`SAST scan execution (jobToken: ${jobToken})`);
-            await sast.waitForSastScan(jobToken).then(result => {
+            await sast
+                .waitForSastScan(jobToken)
+                .then(result => {
                 if (!result) {
                     throw new Error(utils.failure(`SAST scan execution (jobToken: ${jobToken})`));
                 }
                 else {
                     core.info(utils.success(`SAST scan execution (jobToken: ${jobToken})`));
                 }
-            }).catch(error => {
+            })
+                .catch(error => {
                 core.error(error.message);
                 core.setFailed(utils.failure(`SAST scan execution (jobToken: ${jobToken})`));
                 process.exit(core.ExitCode.Failure);
@@ -42505,14 +42545,18 @@ async function run() {
             });
             core.info(utils.success(`Artifact Download (jobToken: ${jobToken})`));
             core.info(`Artifact Upload to ${INPUT.ssc_app}:${INPUT.ssc_version} [${appVersionId}]`);
-            const artifactId = await artifact.uploadArtifact(appVersionId, fprPath).catch(error => {
+            const artifactId = await artifact
+                .uploadArtifact(appVersionId, fprPath)
+                .catch(error => {
                 core.error(error.message);
                 core.setFailed(utils.failure(`Artifact Upload to ${INPUT.ssc_app}:${INPUT.ssc_version} [${appVersionId}]`));
                 process.exit(core.ExitCode.Failure);
             });
             core.info(utils.success(`Artifact Upload to ${INPUT.ssc_app}:${INPUT.ssc_version} [${appVersionId}]`));
             core.info(`Artifact Processing [${artifactId}]`);
-            const scan = await artifact.waitForArtifactUpload(artifactId).catch(error => {
+            const scan = await artifact
+                .waitForArtifactUpload(artifactId)
+                .catch(error => {
                 core.error(error.message);
                 core.setFailed(utils.failure(`Artifact Processing [${artifactId}]`));
                 process.exit(core.ExitCode.Failure);
@@ -42523,23 +42567,26 @@ async function run() {
                 core.info(`Tagging Vulns with commit SHA (${github.context.sha})`);
                 const scanVulns = await vuln.getNewVulnsByScanId(appVersionId, scan.id);
                 if (scanVulns.length) {
-                    const customTagGuid = core.getInput("ssc_commit_customtag_guid");
+                    const customTagGuid = core.getInput('ssc_commit_customtag_guid');
                     core.info(`Checking if ${INPUT.ssc_app}:${INPUT.ssc_version} [${appVersionId}] has Commit CustomTag (guid: ${customTagGuid})`);
-                    if (!await appversion.appVersionHasCustomTag(appVersionId, customTagGuid)
+                    if (!(await appversion
+                        .appVersionHasCustomTag(appVersionId, customTagGuid)
                         .catch(error => {
                         core.error(utils.failure(`Checking if ${INPUT.ssc_app}:${INPUT.ssc_version} [${appVersionId}] has Commit CustomTag (guid: ${customTagGuid})`));
                         throw error;
-                    })) {
+                    }))) {
                         core.info(`AppVersion ${INPUT.ssc_app}:${INPUT.ssc_version} [${appVersionId}] ${utils.bgYellow('does not have Commit CustomTag')} (guid: ${customTagGuid})`);
                         core.info(`Checking if CustomTag exists in Templates (guid: ${customTagGuid})`);
-                        if (await customtag.commitCustomTagExists(customTagGuid)
+                        if (await customtag
+                            .commitCustomTagExists(customTagGuid)
                             .catch(error => {
                             core.error(utils.failure(`Checking if CustomTag exists in Templates (guid: ${customTagGuid})`));
                             throw error;
                         })) {
                             core.info(utils.exists(`Checking if CustomTag exists in Templates (guid: ${customTagGuid})`));
                             core.info(`Adding CustomTag ${customTagGuid} to ${INPUT.ssc_app}:${INPUT.ssc_version} [${appVersionId}]`);
-                            await appversion.addCustomTag(appVersionId, customTagGuid)
+                            await appversion
+                                .addCustomTag(appVersionId, customTagGuid)
                                 .catch(error => {
                                 core.error(utils.failure(`Adding CustomTag ${customTagGuid} to ${INPUT.ssc_app}:${INPUT.ssc_version} [${appVersionId}]`));
                                 throw error;
@@ -42547,7 +42594,8 @@ async function run() {
                             core.info(utils.success(`Adding CustomTag ${customTagGuid} to ${INPUT.ssc_app}:${INPUT.ssc_version} [${appVersionId}]`));
                         }
                     }
-                    await vuln.tagVulns(appVersionId, scanVulns, customTagGuid, github.context.sha)
+                    await vuln
+                        .tagVulns(appVersionId, scanVulns, customTagGuid, github.context.sha)
                         .catch(error => {
                         throw error;
                     });
@@ -42562,21 +42610,23 @@ async function run() {
             }
         }
         if (github.context.eventName === 'pull_request') {
-            core.info("Pull Request Detected");
+            core.info('Pull Request Detected');
             await pullrequest.decorate(appVersionId);
         }
         /** RUN Security Gate */
-        core.info("Security Gate execution");
-        const passedSecurityGate = await securitygate.run(appVersionId, INPUT.security_gate_filterset, INPUT.security_gate_action)
+        core.info('Security Gate execution');
+        const passedSecurityGate = await securitygate
+            .run(appVersionId, INPUT.security_gate_filterset, INPUT.security_gate_action)
             .catch(error => {
             core.error(error.message);
             core.setFailed(utils.failure(`Security Gate execution`));
             process.exit(core.ExitCode.Failure);
         });
-        core.info(utils.success("Security Gate execution"));
+        core.info(utils.success('Security Gate execution'));
         /** Job Summary */
         core.info(`Job Summary generation`);
-        await summary.setJobSummary(appVersionId, passedSecurityGate, INPUT.summary_filterset, INPUT.security_gate_filterset)
+        await summary
+            .setJobSummary(appVersionId, passedSecurityGate, INPUT.summary_filterset, INPUT.security_gate_filterset)
             .catch(error => {
             core.error(error.message);
             core.warning(utils.failure(`Job Summary generation`));
@@ -42679,7 +42729,8 @@ async function getSelfCheckRunId() {
     const { data } = await octokit.request('GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs', {
         owner: github.context.issue.owner,
         repo: github.context.issue.repo,
-        run_id: github.context.runId, headers: {
+        run_id: github.context.runId,
+        headers: {
             'X-GitHub-Api-Version': '2022-11-28'
         }
     });
@@ -42692,9 +42743,13 @@ async function getSelfCheckRunId() {
 }
 async function waitForPullRunsCompleted() {
     const selfJobId = await getSelfCheckRunId();
-    const { data: commits } = await octokit.rest.pulls.listCommits({
-        owner: github.context.issue.owner, repo: github.context.issue.repo, pull_number: github.context.issue.number,
-    }).catch((error) => {
+    const { data: commits } = await octokit.rest.pulls
+        .listCommits({
+        owner: github.context.issue.owner,
+        repo: github.context.issue.repo,
+        pull_number: github.context.issue.number
+    })
+        .catch((error) => {
         core.error(error.message);
         throw new Error(`Failed to fetch commit list for pull #${github.context.issue.number} from ${github.context.issue.owner}/${github.context.repo.repo}`);
     });
@@ -42712,9 +42767,16 @@ async function waitForPullRunsCompleted() {
         await Promise.all(checkRuns.check_runs.map(async function (checkRun) {
             if (checkRun.id != selfJobId) {
                 let checkRunStatus = checkRun.status;
-                while (["stale", "in_progress", "queued", "requested", "waiting", "pending"].includes(checkRunStatus)) {
+                while ([
+                    'stale',
+                    'in_progress',
+                    'queued',
+                    'requested',
+                    'waiting',
+                    'pending'
+                ].includes(checkRunStatus)) {
                     core.info(`Waiting for Run : [${checkRun.id}] ${checkRun.name}:${commit.commit.message} [${utils.shortSha(commit.sha)}] to be completed. Curent status: ${checkRun.status}`);
-                    await new Promise((resolve) => setTimeout(resolve, Number(utils.getEnvOrValue("GHA_COMMIT_CHECKS_PULL_INTERVAL", 60)) * 1000));
+                    await new Promise(resolve => setTimeout(resolve, Number(utils.getEnvOrValue('GHA_COMMIT_CHECKS_PULL_INTERVAL', 60)) * 1000));
                     const { data: tmp } = await octokit.request('GET /repos/{owner}/{repo}/check-runs/{check_run_id}', {
                         owner: github.context.issue.owner,
                         repo: github.context.issue.repo,
@@ -42734,9 +42796,13 @@ async function waitForPullRunsCompleted() {
 exports.waitForPullRunsCompleted = waitForPullRunsCompleted;
 async function decorate(appVersionId) {
     core.info(`Decorating pull request #${github.context.issue.number} from ${github.context.issue.owner}/${github.context.repo.repo}`);
-    const { data: commits } = await octokit.rest.pulls.listCommits({
-        owner: github.context.issue.owner, repo: github.context.issue.repo, pull_number: github.context.issue.number,
-    }).catch((error) => {
+    const { data: commits } = await octokit.rest.pulls
+        .listCommits({
+        owner: github.context.issue.owner,
+        repo: github.context.issue.repo,
+        pull_number: github.context.issue.number
+    })
+        .catch((error) => {
         core.error(error.message);
         throw new Error(`Failed to fetch commit list for pull #${github.context.issue.number} from ${github.context.issue.owner}/${github.context.repo.repo}`);
     });
@@ -42745,7 +42811,10 @@ async function decorate(appVersionId) {
             utils.debugObject(`Commit SHA: ${commit.sha}`);
             // Get Commit's Files
             const { data: commitData } = await octokit.request(`GET /repos/{owner}/{repo}/commits/{ref}`, {
-                owner: github.context.issue.owner, repo: github.context.repo.repo, ref: commit.sha, headers: {
+                owner: github.context.issue.owner,
+                repo: github.context.repo.repo,
+                ref: commit.sha,
+                headers: {
                     'X-GitHub-Api-Version': '2022-11-28'
                 }
             });
@@ -42762,40 +42831,45 @@ async function decorate(appVersionId) {
                     }
                     let diffElements = Array.from(m[2].split(','), Number);
                     const diffHunk = {
-                        start: diffElements[0], end: diffElements[0] + diffElements[0] - 1
+                        start: diffElements[0],
+                        end: diffElements[0] + diffElements[0] - 1
                     };
                     utils.debugObject(`diff: ${file.filename} ${diffHunk.start}:${diffHunk.end}`);
                     const query = `[analysis type]:"sca" AND file:"${file.filename}" AND line:[${diffHunk.start},${diffHunk.end}] AND commit:${commit.sha}`;
                     let vulns = await vuln.getAppVersionVulns(appVersionId, query, 'id');
-                    await vuln.addDetails(vulns, "issueName,traceNodes,fullFileName,shortFileName,brief,friority,lineNumber");
+                    await vuln.addDetails(vulns, 'issueName,traceNodes,fullFileName,shortFileName,brief,friority,lineNumber');
                     vulns.forEach(vuln => {
                         utils.debugGroup(`Adding comment for vuln:`, vuln);
                         const appVersionUrl = `${core.getInput('ssc_base_url')}/html/ssc/version/370/audit?q=${vuln?.issueInstanceId}`;
                         comments.push({
-                            path: file.filename, line: vuln.details.lineNumber, body: `
+                            path: file.filename,
+                            line: vuln.details.lineNumber,
+                            body: `
 <p><b>Security Scanning</b> / Fortify SAST</p>
 <h3>${vuln.details.friority} - ${vuln.details.issueName} </h3>
 <p>${vuln.details.brief}</p>
 <br>
-<p><a href=${appVersionUrl} target="_blank" rel="noopener noreferrer">More detailed information</a></p>`,
+<p><a href=${appVersionUrl} target="_blank" rel="noopener noreferrer">More detailed information</a></p>`
                         });
                     });
                 }
             }));
             if (comments.length) {
                 utils.debugGroup(`comments:`, comments);
-                await octokit.request('POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews', {
+                await octokit
+                    .request('POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews', {
                     owner: github.context.issue.owner,
                     repo: github.context.repo.repo,
                     pull_number: github.context.issue.number,
                     commit_id: commit.sha,
                     body: `Fortify found potential problems in commit ${utils.shortSha(commit.sha)}`,
-                    event: "COMMENT",
+                    event: 'COMMENT',
                     comments: comments,
                     headers: {
                         'X-GitHub-Api-Version': '2022-11-28'
                     }
-                }).catch(error => {
+                })
+                    .catch(error => {
                     core.error(`${error.message}`);
                     // process.exit(1)
                 });
@@ -42806,7 +42880,7 @@ async function decorate(appVersionId) {
                 ${error.message}`);
         }
     }));
-    core.info("Decoration finished.");
+    core.info('Decoration finished.');
 }
 exports.decorate = decorate;
 
@@ -42872,15 +42946,30 @@ async function startSastScan(packagePath) {
 exports.startSastScan = startSastScan;
 async function waitForSastScan(jobToken) {
     await core.group(`SAST scan execution (jobToken: ${jobToken})`, async () => {
-        await utils.fcli(['sc-sast', 'scan', 'wait-for', jobToken,
+        await utils.fcli([
+            'sc-sast',
+            'scan',
+            'wait-for',
+            jobToken,
             // `--status-type=scan`, `--while=PENDING|QUEUED|RUNNING`,
-            `--interval=1m`, `--on-failure-state=terminate`, `--on-unknown-state=terminate`,
-            `--output=expr=SAST scan execution (jobToken: {jobToken}) ... {scanState}`], true, false);
+            `--interval=1m`,
+            `--on-failure-state=terminate`,
+            `--on-unknown-state=terminate`,
+            `--output=expr=SAST scan execution (jobToken: {jobToken}) ... {scanState}`
+        ], true, false);
     });
-    let data = await utils.fcli(['sc-sast', 'scan', 'wait-for', jobToken,
+    let data = await utils.fcli([
+        'sc-sast',
+        'scan',
+        'wait-for',
+        jobToken,
         // `--status-type=scan`, `--while=PENDING|QUEUED|RUNNING`, '--no-progress'
-        `--interval=1m`, '--progress=none', '--output=json',
-        `--on-failure-state=terminate`, `--on-unknown-state=terminate`]);
+        `--interval=1m`,
+        '--progress=none',
+        '--output=json',
+        `--on-failure-state=terminate`,
+        `--on-unknown-state=terminate`
+    ]);
     data = data[0];
     if (data['scanState'] === 'COMPLETED'
     // && jsonRes['sscUploadState'] === 'COMPLETED'
@@ -42946,11 +43035,11 @@ async function run(appVersionId, filterSet, action) {
     if (!passed) {
         switch (action.toLowerCase()) {
             case 'warn':
-                core.info("Security Gate has been set to Warning only");
+                core.info('Security Gate has been set to Warning only');
                 core.warning('Security Gate Failure');
                 break;
             case 'block':
-                core.info("Security Gate has been set to Blocking. The job will fail");
+                core.info('Security Gate has been set to Blocking. The job will fail');
                 core.setFailed('Security Gate Failure');
                 break;
         }
@@ -43000,7 +43089,8 @@ async function hasActiveSscSession(base_url) {
             'ssc',
             'session',
             'list',
-            '-q', 'name==default',
+            '-q',
+            'name==default',
             '--output=json'
         ]);
         if (Object.keys(jsonRes).length > 0) {
@@ -43021,7 +43111,8 @@ async function hasActiveSastSession(base_url) {
             'sc-sast',
             'session',
             'list',
-            '-q', 'name==default',
+            '-q',
+            'name==default',
             '--output=json'
         ]);
         if (Object.keys(jsonRes).length > 0) {
@@ -43166,14 +43257,14 @@ async function loginSsc(INPUT) {
             core.info('Existing default Software Security Center login session found.');
         }
         else {
-            core.info("Login to Software Security Center ..... " + utils.bgRed('Failure'));
+            core.info('Login to Software Security Center ..... ' + utils.bgRed('Failure'));
             core.error('SSC: Missing credentials. Specify CI Token or Username+Password');
             throw new Error('SSC: Credentials missing and no existing default login session exists');
         }
-        core.info("Login to Software Security Center ..... " + utils.bgGreen('Success'));
+        core.info('Login to Software Security Center ..... ' + utils.bgGreen('Success'));
     }
     catch (err) {
-        core.info("Login to Software Security Center ..... " + utils.bgRed('Failure'));
+        core.info('Login to Software Security Center ..... ' + utils.bgRed('Failure'));
         core.error(`${err}`);
         throw new Error(`Login to SSC failed!`);
     }
@@ -43193,14 +43284,14 @@ async function loginSast(INPUT) {
             core.info('Existing default ScanCentral SAST login session found.');
         }
         else {
-            core.info("Login to ScanCentral SAST ..... " + utils.bgRed('Failure'));
+            core.info('Login to ScanCentral SAST ..... ' + utils.bgRed('Failure'));
             core.error('ScanCentral SAST: Missing credentials. Specify CI Token or Username+Password');
             throw new Error('ScanCentral SAST: Credentials missing and no existing default login session exists');
         }
-        core.info("Login to ScanCentral SAST ..... " + utils.bgGreen('Success'));
+        core.info('Login to ScanCentral SAST ..... ' + utils.bgGreen('Success'));
     }
     catch (err) {
-        core.info("Login to ScanCentral SAST ..... " + utils.bgRed('Failure'));
+        core.info('Login to ScanCentral SAST ..... ' + utils.bgRed('Failure'));
         core.error(`${err.message}`);
         throw new Error('Login to ScanCentral SAST failed!');
     }
@@ -43281,17 +43372,17 @@ function getTotalAndNewCell(count, countNew) {
         return `${count} (${countNew} :new:)`;
     }
 }
-async function getVulnsByScanProductTable(appId, filterSet = "Security Auditor View", newIssues = false) {
+async function getVulnsByScanProductTable(appId, filterSet = 'Security Auditor View', newIssues = false) {
     let headers = [{ data: ':test_tube: Analysis Type', header: true }];
     let rows = [];
     const scanTypesList = await artifact.getScanTypesList(appId);
     const folders = await filterset.getFilterSetFolders(appId, filterSet);
     let folderTotals = [];
     let folderTotalsNew = [];
-    folders.forEach((folder) => {
-        headers.push({ data: `${stringToHeader(folder["name"])}`, header: true });
-        folderTotals[folder["name"]] = 0;
-        folderTotalsNew[folder["name"]] = 0;
+    folders.forEach(folder => {
+        headers.push({ data: `${stringToHeader(folder['name'])}`, header: true });
+        folderTotals[folder['name']] = 0;
+        folderTotalsNew[folder['name']] = 0;
     });
     headers.push({ data: `Total`, header: true });
     await Promise.all(scanTypesList.map(async (scanType) => {
@@ -43300,13 +43391,13 @@ async function getVulnsByScanProductTable(appId, filterSet = "Security Auditor V
         const vulns = await vuln.getAppVersionVulnsCount(appId, filterSet, scanType, newIssues);
         const vulnsNew = await vuln.getAppVersionVulnsCount(appId, filterSet, scanType, true);
         let row = [utils.normalizeScanType(scanType)];
-        folders.forEach((folder) => {
-            const count = getVulnsTotalCountByFolder(vulns, folder["name"]);
-            const countNew = getVulnsTotalCountByFolder(vulnsNew, folder["name"]);
+        folders.forEach(folder => {
+            const count = getVulnsTotalCountByFolder(vulns, folder['name']);
+            const countNew = getVulnsTotalCountByFolder(vulnsNew, folder['name']);
             total += count;
-            folderTotals[folder["name"]] += count;
+            folderTotals[folder['name']] += count;
             totalNew += countNew;
-            folderTotalsNew[folder["name"]] += countNew;
+            folderTotalsNew[folder['name']] += countNew;
             row.push(getTotalAndNewCell(count, countNew));
         });
         row.push(getTotalAndNewCell(total, totalNew));
@@ -43315,46 +43406,47 @@ async function getVulnsByScanProductTable(appId, filterSet = "Security Auditor V
     let totalRow = [`Total`];
     let total = 0;
     let totalNew = 0;
-    folders.forEach((folder) => {
-        totalRow.push(getTotalAndNewCell(folderTotals[folder["name"]], folderTotalsNew[folder["name"]]));
-        total += folderTotals[folder["name"]];
-        totalNew += folderTotalsNew[folder["name"]];
+    folders.forEach(folder => {
+        totalRow.push(getTotalAndNewCell(folderTotals[folder['name']], folderTotalsNew[folder['name']]));
+        total += folderTotals[folder['name']];
+        totalNew += folderTotalsNew[folder['name']];
     });
     totalRow.push(getTotalAndNewCell(total, totalNew));
     rows.push(totalRow);
     return [headers].concat(rows);
 }
-async function getNewVulnsByScanProductTable(appId, filterSet = "Security Auditor View") {
+async function getNewVulnsByScanProductTable(appId, filterSet = 'Security Auditor View') {
     return await getVulnsByScanProductTable(appId, filterSet, true);
 }
-async function getNewVulnsTable(appId, filterSet = "Security Auditor View") {
+async function getNewVulnsTable(appId, filterSet = 'Security Auditor View') {
     var jp = __nccwpck_require__(4378);
     let headers = [];
     let row = [];
     let total = 0;
     const folders = await filterset.getFilterSetFolders(appId, filterSet);
     const vulns = await vuln.getAppVersionNewVulnsCount(appId, filterSet);
-    folders.forEach((folder) => {
-        headers.push({ data: `${stringToHeader(folder["name"])}`, header: true });
-        const count = jp.query(vulns, `$..[?(@.id=="${folder["name"]}")].totalCount`)[0];
+    folders.forEach(folder => {
+        headers.push({ data: `${stringToHeader(folder['name'])}`, header: true });
+        const count = jp.query(vulns, `$..[?(@.id=="${folder['name']}")].totalCount`)[0];
         row.push(count ? `${count}` : `${0}`);
         total += count ? count : 0;
     });
     headers.push({ data: `Total`, header: true });
     row.push(`${total}`);
-    return [
-        headers,
-        row
-    ];
+    return [headers, row];
 }
 async function getScansSummaryTable(appId) {
     const scanTypesList = await artifact.getScanTypesList(appId);
     let scanRows = [];
     await Promise.all(scanTypesList.map(async (scanType) => {
         const lastScan = await artifact.getLatestArtifact(appId, scanType);
-        const lastDate = new Date(lastScan["lastScanDate"]);
-        const diffDays = Math.ceil(Math.abs(new Date().getDate() - lastDate.getDate()) / (1000 * 60 * 60 * 24));
-        scanRows.push([`<b>Last Successful ${utils.normalizeScanType(scanType)} Scan</b>`, `${lastDate.toLocaleString('fr-FR')} (${utils.daysOrToday(diffDays)})`]);
+        const lastDate = new Date(lastScan['lastScanDate']);
+        const diffDays = Math.ceil(Math.abs(new Date().getDate() - lastDate.getDate()) /
+            (1000 * 60 * 60 * 24));
+        scanRows.push([
+            `<b>Last Successful ${utils.normalizeScanType(scanType)} Scan</b>`,
+            `${lastDate.toLocaleString('fr-FR')} (${utils.daysOrToday(diffDays)})`
+        ]);
     }));
     return scanRows;
 }
@@ -43362,27 +43454,37 @@ function getAsLink(text, link) {
     return `<a target="_blank" href="${link}">${text}</a>`;
 }
 async function setJobSummary(appVersionId, passedSecurityage, summaryFilterSet, securityGateFilterSet) {
-    const securityRating = await performanceindicator.getPerformanceIndicatorValueByName(appVersionId, 'Fortify Security Rating')
+    const securityRating = await performanceindicator
+        .getPerformanceIndicatorValueByName(appVersionId, 'Fortify Security Rating')
         .catch(error => {
-        core.warning("Failed to get Security Rating");
+        core.warning('Failed to get Security Rating');
         return 0;
     });
     let n = 0;
-    const securityStars = ":white_circle::white_circle::white_circle::white_circle::white_circle:".replace(/white_circle/g, match => n++ < securityRating ? "star" : match);
+    const securityStars = ':white_circle::white_circle::white_circle::white_circle::white_circle:'.replace(/white_circle/g, match => (n++ < securityRating ? 'star' : match));
     const appVersionUrl = `${core.getInput('ssc_base_url')}/html/ssc/version/${appVersionId}/audit`;
     const securityRatingsUrl = `${core.getInput('ssc_base_url')}/html/ssc/version/${appVersionId}/trend?versionTrendDateRange=YEAR&versionTrendParam=performanceIndicators%3A%3AFortifySecurityRating`;
     const securityGateUrl = `${core.getInput('ssc_base_url')}/html/ssc/version/${appVersionId}/audit?filterset=${await filterset.getFilterSetGuid(appVersionId, securityGateFilterSet)}`;
     await core.summary
-        .addImage('https://cdn.asp.events/CLIENT_CloserSt_D86EA381_5056_B739_5482D50A1A831DDD/sites/CSWA-2023/media/libraries/exhibitors/Ezone-cover.png/fit-in/1500x9999/filters:no_upscale()', 'Fortify by OpenText CyberSecurity', { width: "600" })
+        .addImage('https://cdn.asp.events/CLIENT_CloserSt_D86EA381_5056_B739_5482D50A1A831DDD/sites/CSWA-2023/media/libraries/exhibitors/Ezone-cover.png/fit-in/1500x9999/filters:no_upscale()', 'Fortify by OpenText CyberSecurity', { width: '600' })
         .addHeading('Fortify AST Results')
         .addRaw(`:date: Summary Date: ${new Date().toLocaleString('fr-FR')}`)
         .addHeading(':clipboard: Executive Summary', 2)
         .addTable([
-        [`<b>Application</b>`, core.getInput('ssc_app'), `<b>Application Version</b>`, `${getAsLink(core.getInput('ssc_version'), appVersionUrl)}`]
+        [
+            `<b>Application</b>`,
+            core.getInput('ssc_app'),
+            `<b>Application Version</b>`,
+            `${getAsLink(core.getInput('ssc_version'), appVersionUrl)}`
+        ]
     ])
         .addTable([
-        [`<p><b>${getAsLink("Fortify Security Rating", securityRatingsUrl)}</b>: ${securityStars}</p>`],
-        [`<p><b>${getAsLink("Security Gate Status", securityGateUrl)}</b> :   ${passedSecurityage ? 'Passed :white_check_mark:' : 'Failed :x:'}</p>`]
+        [
+            `<p><b>${getAsLink('Fortify Security Rating', securityRatingsUrl)}</b>: ${securityStars}</p>`
+        ],
+        [
+            `<p><b>${getAsLink('Security Gate Status', securityGateUrl)}</b> :   ${passedSecurityage ? 'Passed :white_check_mark:' : 'Failed :x:'}</p>`
+        ]
     ])
         .addTable(await getScansSummaryTable(appVersionId))
         .addHeading(':signal_strength: Security Findings', 2)
@@ -43573,7 +43675,7 @@ async function fcli(args, returnStatus = false, silent = true) {
     }
 }
 exports.fcli = fcli;
-async function fcliRest(url, method = "GET", body, query) {
+async function fcliRest(url, method = 'GET', body, query) {
     let args = [
         'ssc',
         'rest',
@@ -43584,7 +43686,7 @@ async function fcliRest(url, method = "GET", body, query) {
     ];
     body ? args.push(`--data=${body}`) : null;
     query ? args.concat([`-q`, `${query}`]) : null;
-    return (await fcli(args));
+    return await fcli(args);
 }
 exports.fcliRest = fcliRest;
 function stringToArgsArray(text) {
@@ -43632,17 +43734,11 @@ async function scancentral(args, silent = false) {
 }
 exports.scancentral = scancentral;
 async function scancentralRest(url) {
-    return (await scancentral([
-        'sc-sast',
-        'rest',
-        'call',
-        url,
-        '--output=json'
-    ]))[0];
+    return (await scancentral(['sc-sast', 'rest', 'call', url, '--output=json']))[0];
 }
 exports.scancentralRest = scancentralRest;
 async function getSastBaseUrl() {
-    const urls = (await fcli("sc-sast session list -o json".split(" ")))[0].url;
+    const urls = (await fcli('sc-sast session list -o json'.split(' ')))[0].url;
     return urls.match(/(?<=SC-SAST: ).*/gm);
 }
 exports.getSastBaseUrl = getSastBaseUrl;
@@ -43658,11 +43754,11 @@ function toTitleCase(str) {
 }
 function normalizeScanType(scanType) {
     switch (scanType) {
-        case "SCA":
-            return "Fortify SAST";
+        case 'SCA':
+            return 'Fortify SAST';
             break;
-        case "WEBINSPECT":
-            return "Fortify DAST";
+        case 'WEBINSPECT':
+            return 'Fortify DAST';
             break;
         default:
             return toTitleCase(scanType);
@@ -43671,10 +43767,10 @@ function normalizeScanType(scanType) {
 exports.normalizeScanType = normalizeScanType;
 function daysOrToday(diffDays) {
     if (diffDays < 1) {
-        return "Today";
+        return 'Today';
     }
     else {
-        return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+        return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
     }
 }
 exports.daysOrToday = daysOrToday;
@@ -43784,24 +43880,24 @@ const filterset = __importStar(__nccwpck_require__(6671));
 const core = __importStar(__nccwpck_require__(2186));
 const utils_1 = __nccwpck_require__(1314);
 async function getAppVersionVulnsCount(appId, filterSet, analysisType, newIssues) {
-    let query = "";
+    let query = '';
     if (newIssues) {
-        query = "[issue age]:NEW";
+        query = '[issue age]:NEW';
     }
     if (analysisType) {
         switch (analysisType) {
-            case "SAST":
-                query = `${query}${query.length ? " AND " : ""}[analysis type]:SCA`;
+            case 'SAST':
+                query = `${query}${query.length ? ' AND ' : ''}[analysis type]:SCA`;
                 break;
-            case "DAST":
-                query = `${query}${query.length ? " AND " : ""}[analysis type]:WEBINSPECT`;
+            case 'DAST':
+                query = `${query}${query.length ? ' AND ' : ''}[analysis type]:WEBINSPECT`;
                 break;
             default:
-                query = `${query}${query.length ? " AND " : ""}[analysis type]:${analysisType}`;
+                query = `${query}${query.length ? ' AND ' : ''}[analysis type]:${analysisType}`;
                 break;
         }
     }
-    const url = `/api/v1/projectVersions/${appId}/issueGroups?filterset=${await filterset.getFilterSetGuid(appId, filterSet)}&groupingtype=FOLDER${query.length ? `&qm=issues&q=${encodeURI(query)}` : ""}`;
+    const url = `/api/v1/projectVersions/${appId}/issueGroups?filterset=${await filterset.getFilterSetGuid(appId, filterSet)}&groupingtype=FOLDER${query.length ? `&qm=issues&q=${encodeURI(query)}` : ''}`;
     return await utils.fcliRest(url);
 }
 exports.getAppVersionVulnsCount = getAppVersionVulnsCount;
@@ -43813,29 +43909,29 @@ async function getAppVersionVulnsCountTotal(appId, filterSet, analysisType, newI
     const count = await getAppVersionVulnsCount(appId, filterSet, analysisType, newIssues);
     let total = 0;
     count.forEach(item => {
-        total += item["totalCount"];
+        total += item['totalCount'];
     });
     return total;
 }
 exports.getAppVersionVulnsCountTotal = getAppVersionVulnsCountTotal;
 async function getVulnsByScanId(appVersionId, scanId, fields, newIssues) {
-    let restQuery = "";
+    let restQuery = '';
     if (newIssues) {
-        restQuery = "[issue age]:NEW";
+        restQuery = '[issue age]:NEW';
     }
     return await getAppVersionVulns(appVersionId, restQuery, `lastScanId==${scanId}`, fields);
 }
 exports.getVulnsByScanId = getVulnsByScanId;
 async function getNewVulnsByScanId(appVersionId, scanId) {
-    return await getVulnsByScanId(appVersionId, scanId, "id,revision,lastScanId", true);
+    return await getVulnsByScanId(appVersionId, scanId, 'id,revision,lastScanId', true);
 }
 exports.getNewVulnsByScanId = getNewVulnsByScanId;
 async function getAppVersionVulns(appId, restQuery, fcliQuery, fields, embed) {
     let vulns = [];
     let url = `/api/v1/projectVersions/${appId}/issues?`;
-    url += restQuery ? `q=${encodeURI(restQuery)}&qm=issues&` : "";
-    url += fields ? `fields=${fields}&` : "";
-    url += embed ? `embed=${embed}&` : "";
+    url += restQuery ? `q=${encodeURI(restQuery)}&qm=issues&` : '';
+    url += fields ? `fields=${fields}&` : '';
+    url += embed ? `embed=${embed}&` : '';
     return await utils.fcliRest(url, 'GET', '', fcliQuery);
 }
 exports.getAppVersionVulns = getAppVersionVulns;
@@ -43846,7 +43942,7 @@ async function addDetails(vulns, fields) {
         utils.debugGroup(`Vuln ${vuln.id} details:`, data);
         if (data?.fields) {
             vuln.details = {};
-            data.fields.split(",").forEach(function (field) {
+            data.fields.split(',').forEach(function (field) {
                 vuln.details[field] = data[field];
             });
         }
@@ -43858,20 +43954,20 @@ async function addDetails(vulns, fields) {
 exports.addDetails = addDetails;
 async function tagVulns(appId, vulns, guid, value) {
     let body = {
-        "customTagAudit": {
-            "customTagGuid": guid,
-            "textValue": value
+        customTagAudit: {
+            customTagGuid: guid,
+            textValue: value
         },
-        "issues": vulns
+        issues: vulns
     };
-    return (await utils.fcliRest(`/api/v1/projectVersions/${appId}/issues/action/updateTag`, "POST", JSON.stringify(body))).length > 0;
+    return ((await utils.fcliRest(`/api/v1/projectVersions/${appId}/issues/action/updateTag`, 'POST', JSON.stringify(body))).length > 0);
 }
 exports.tagVulns = tagVulns;
 async function transposeToAppVersion(vulns, appVersionId) {
     utils.debugObject(`Transposing vulns to ${appVersionId}`);
     utils.debugObject(`source vulns qty: ${vulns.length}`);
     utils.debugObject(`Getting target vulns`);
-    const targetVulns = await getAppVersionVulns(appVersionId, "", "", "id,issueInstanceId,revision");
+    const targetVulns = await getAppVersionVulns(appVersionId, '', '', 'id,issueInstanceId,revision');
     utils.debugObject(`target vulns qty: ${targetVulns.length}`);
     var jp = __nccwpck_require__(4378);
     vulns.forEach(function (vuln, index, vulns) {
@@ -43890,23 +43986,23 @@ async function transposeToAppVersion(vulns, appVersionId) {
 exports.transposeToAppVersion = transposeToAppVersion;
 function getAuditVulnsRequest(appVersionId, vulns, customTagAudits) {
     const body = {
-        "issues": vulns,
-        "customTagAudit": customTagAudits
+        issues: vulns,
+        customTagAudit: customTagAudits
     };
     const uri = `/api/v1/projectVersions/${appVersionId}/issues/action/audit`;
     return {
-        "httpVerb": "POST",
-        "postData": body,
-        "uri": core.getInput('ssc_base_url') + uri
+        httpVerb: 'POST',
+        postData: body,
+        uri: core.getInput('ssc_base_url') + uri
     };
 }
 exports.getAuditVulnsRequest = getAuditVulnsRequest;
 async function auditVulns(appVersionId, vulns, customTagAudits) {
     let body = {
-        "issues": vulns,
-        "customTagAudit": customTagAudits
+        issues: vulns,
+        customTagAudit: customTagAudits
     };
-    return await utils.fcliRest(`/api/v1/projectVersions/${appVersionId}/issues/action/audit`, "POST", JSON.stringify(body).replace("customTagIndex", "newCustomTagIndex"));
+    return await utils.fcliRest(`/api/v1/projectVersions/${appVersionId}/issues/action/audit`, 'POST', JSON.stringify(body).replace('customTagIndex', 'newCustomTagIndex'));
 }
 exports.auditVulns = auditVulns;
 
