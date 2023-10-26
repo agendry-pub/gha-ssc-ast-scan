@@ -137,7 +137,7 @@ jobs:
     steps:
       # Pull SAST issues from Fortify on Demand and generate GitHub-optimized SARIF output
       - name: Fortify SAST Scan
-        uses: agendry-pub/gha-fortify-sast-scan@main
+        uses: agendry-pub/gha-fortify-sast-scan@v1
         env:
           FCLI_DEFAULT_TOKEN_EXPIRE: "1h"
         with:
