@@ -1,0 +1,74 @@
+name: 'Fortify SSC - SAST Scan'
+description: 'GitHub Action for SAST Scan Execution'
+author: 'Alex Gendry @ OpenText'
+
+# Define your inputs here.
+inputs:
+  ssc_base_url:
+    description: 'Fortify SSC URL'
+    required: true
+  ssc_ci_username:
+    description: 'Fortify SSC CI Acount username'
+    required: false
+  ssc_ci_password:
+    description: 'Fortify SSC CI Acount password'
+    required: false
+  ssc_ci_token:
+    description: 'Fortify SSC Decrypted or Encrypted CI Token (CIToken)'
+    required: false
+  ssc_app:
+    description: 'Fortify SSC Application Name'
+    default: ${{ github.event.repository.name }}
+    required: true
+  ssc_version:
+    description: 'Fortify SSC Application Version Name'
+    default: ${{ github.ref_name }}
+    required: true
+  ssc_source_app:
+    description: 'Fortify SSC Source Application Name to Copy State from'
+    required: false
+  ssc_source_version:
+    description: 'Fortify SSC Source Application Version Name to Copy State from'
+    required: false
+  ssc_source_copy_vulns:
+    description: 'Fortify SSC Source Application Version Name to Copy State from'
+    default: false
+    required: false
+  ssc_commit_customtag_guid:
+    description: 'guid of the customtag to which push the commit sha'
+    default: "bc16a10e-1b08-4516-80a1-f0b4ff4a3e9d"
+    required: false
+  sast_scan:
+    description: 'Enable to run ScanCentral SAST scan'
+    default: true
+    required: false
+  sast_client_auth_token:
+    description: 'Fortify ScanCentral SAST Client authentication token'
+    required: false
+  sast_build_options:
+    description: 'Fortify scancentral package build options'
+    default: -bt none
+    required: false
+  security_gate_action:
+    description: 'Warn or Block on Security Gate Failure'
+    default: warn
+    required: false
+  security_gate_filterset:
+    description: 'FilterSet used for the Security Gate'
+    default: Security Auditor View
+    required: false
+  summary_filterset:
+    description: 'FilterSet used in the Job Summary'
+    default: Security Auditor View
+    required: false
+  gha_token:
+    description: 'GHA Token used to request GitHub API (Should be set to \${{ secrets.GITHUB_TOKEN }})'
+    required: false
+
+runs:
+  using: node20
+  main: dist/index.js
+
+branding:
+  icon: 'shield'
+  color: 'blue'
