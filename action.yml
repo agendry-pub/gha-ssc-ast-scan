@@ -62,7 +62,7 @@ inputs:
     default: Security Auditor View
     required: false
   gha_token:
-    description: 'GHA Token used to request GitHub API (Should be set to \${{ secrets.GITHUB_TOKEN }})'
+    description: 'GHA Token used to request GitHub API'
     required: false
 
 runs:
