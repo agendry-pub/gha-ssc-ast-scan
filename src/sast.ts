@@ -21,7 +21,7 @@ export async function startSastScan(packagePath: string): Promise<string> {
     // '--no-upload',
     // '--upload',
     // `--appversion=${app}:${version}`,
-    `--sensor-version=23.1.0`,
+    `--sensor-version=23.2.0`,
     `--package-file=${packagePath}`,
     '--output=json'
   ])

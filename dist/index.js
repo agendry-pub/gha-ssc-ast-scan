@@ -42931,7 +42931,7 @@ async function startSastScan(packagePath) {
         // '--no-upload',
         // '--upload',
         // `--appversion=${app}:${version}`,
-        `--sensor-version=23.1.0`,
+        `--sensor-version=23.2.0`,
         `--package-file=${packagePath}`,
         '--output=json'
     ]);
